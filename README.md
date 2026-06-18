@@ -1,11 +1,14 @@
-# Mosquito Hunter Beta v0.3
+# Mosquito Hunter Beta v0.4
 
 Changes:
-- Target memory/tracking
-- Less sensitive wall detection
-- Smarter pseudo-AI scoring
-- Lock requires repeated evidence
-- Zoom button: 1x / 2x / 3x
-- Digital crop zoom fallback if browser camera zoom is unsupported
+- Manual tap-to-lock target
+- Longer target memory
+- Stricter false-positive suppression
+- Dark Boost sensitivity mode
+- Better wall candidate scoring
+- Confirm / reject buttons for local training samples
+- Higher mosquito candidate scores for plausible small dark targets
 
-Still experimental. False positives are expected.
+Notes:
+- No real infrared/thermal detection is possible without external hardware.
+- Local samples are stored in browser localStorage only.

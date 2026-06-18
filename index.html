@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#050505" />
-  <title>Mosquito Hunter Beta v0.3</title>
+  <title>Mosquito Hunter Beta v0.4</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -14,10 +14,10 @@
       <div class="brand">
         <div class="logo">🦟</div>
         <h1>Mosquito Hunter</h1>
-        <p>Beta v0.3 — target memory, smarter scoring en zoom.</p>
+        <p>Beta v0.4 — strictere detectie, handmatige target lock, donkere-kamer boost.</p>
       </div>
       <button id="startBtn" class="primary">START HUNT</button>
-      <div class="note">Open via HTTPS. Niet als lokaal bestand.</div>
+      <div class="note">Tip: tik op het scherm als je zelf een mug ziet. De app probeert daarna dat punt vast te houden.</div>
     </section>
 
     <section id="huntScreen" class="screen hidden">
@@ -25,6 +25,7 @@
         <div class="pill" id="audioThreat">Audio: --</div>
         <div class="pill red" id="motionThreat">Motion: --</div>
         <div class="pill green" id="wallThreat">Wall: --</div>
+        <div class="pill blue" id="manualState">Manual: off</div>
         <div class="pill" id="lockState">No lock</div>
       </div>
 
@@ -35,23 +36,31 @@
 
       <div id="controls">
         <button id="modeBtn">Mode: Dual</button>
+        <button id="sensitivityBtn">Sensitivity: Balanced</button>
         <button id="zoomBtn">Zoom: 1x</button>
         <button id="torchBtn">Zaklamp</button>
         <button id="stopBtn">Stop</button>
       </div>
 
+      <div id="feedback">
+        <button id="confirmMosquito">Mug</button>
+        <button id="rejectTarget">Geen mug</button>
+      </div>
+
       <div id="legend">
-        <div><span class="dot redDot"></span> Rood = vliegend/bewegend target</div>
-        <div><span class="dot greenDot"></span> Groen = stilzittende kandidaat</div>
-        <div><span class="dot blueDot"></span> Blauw = tracked memory</div>
+        <div><span class="dot redDot"></span> Rood = beweging</div>
+        <div><span class="dot greenDot"></span> Groen = stilzittend kandidaat</div>
+        <div><span class="dot blueDot"></span> Blauw = handmatig geselecteerd</div>
       </div>
 
       <div id="debug">
-        <div>Audio peak: <span id="freqOut">--</span></div>
+        <div>Audio: <span id="freqOut">--</span></div>
+        <div>Light: <span id="lightOut">--</span></div>
         <div>Motion: <span id="motionOut">--</span></div>
         <div>Wall candidates: <span id="wallOut">--</span></div>
         <div>Best score: <span id="confidenceOut">0%</span></div>
         <div>Tracks: <span id="tracksOut">0</span></div>
+        <div>Samples: <span id="samplesOut">0</span></div>
       </div>
     </section>
   </main>
