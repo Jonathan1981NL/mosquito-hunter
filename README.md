@@ -1,15 +1,11 @@
-# Mosquito Hunter Beta v0.1
+# Mosquito Hunter Beta v0.2
 
-Private proof-of-concept.
+Dual Scan proof-of-concept.
 
-Features:
-- Camera scan
-- Audio frequency scan
-- Motion tracking
-- Red target circles
-- Confidence meter
-- Target lock
-- PWA manifest
+Red markers:
+- Moving targets / flying insects / motion.
 
-Important:
-Camera and microphone only work properly through HTTPS, e.g. GitHub Pages.
+Green markers:
+- Still dark candidates on wall/ceiling.
+
+This is still experimental and may detect spots, shadows, dust, texture, screws, marks or other non-mosquito objects.

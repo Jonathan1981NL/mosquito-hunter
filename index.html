@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#050505" />
-  <title>Mosquito Hunter Beta</title>
+  <title>Mosquito Hunter Beta v0.2</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -14,19 +14,17 @@
       <div class="brand">
         <div class="logo">🦟</div>
         <h1>Mosquito Hunter</h1>
-        <p>Beta v0.1 — camera, audio, motion tracking en target lock.</p>
+        <p>Beta v0.2 — Dual Scan: rood voor beweging, groen voor stilzittende kandidaten.</p>
       </div>
       <button id="startBtn" class="primary">START HUNT</button>
-      <div class="note">
-        Werkt alleen via een echte HTTPS-link, niet als lokaal bestand.
-        Geef camera- en microfoontoegang wanneer Chrome daarom vraagt.
-      </div>
+      <div class="note">Open via de HTTPS GitHub Pages-link. Niet als lokaal bestand.</div>
     </section>
 
     <section id="huntScreen" class="screen hidden">
       <div id="hud">
         <div class="pill" id="audioThreat">Audio: --</div>
-        <div class="pill" id="visualThreat">Visual: --</div>
+        <div class="pill red" id="motionThreat">Motion: --</div>
+        <div class="pill green" id="wallThreat">Wall: --</div>
         <div class="pill" id="lockState">No lock</div>
       </div>
 
@@ -36,13 +34,20 @@
       </div>
 
       <div id="controls">
+        <button id="modeBtn">Mode: Dual</button>
         <button id="torchBtn">Zaklamp</button>
         <button id="stopBtn">Stop</button>
       </div>
 
+      <div id="legend">
+        <div><span class="dot redDot"></span> Rood = bewegend target</div>
+        <div><span class="dot greenDot"></span> Groen = stilzittende kandidaat</div>
+      </div>
+
       <div id="debug">
         <div>Audio peak: <span id="freqOut">--</span></div>
-        <div>Motion: <span id="motionOut">--</span></div>
+        <div>Motion score: <span id="motionOut">--</span></div>
+        <div>Wall candidates: <span id="wallOut">--</span></div>
         <div>Confidence: <span id="confidenceOut">0%</span></div>
       </div>
     </section>
