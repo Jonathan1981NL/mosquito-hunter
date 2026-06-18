@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#050505" />
-  <title>Mosquito Hunter Beta v0.4</title>
+  <title>Mosquito Hunter Beta v0.6</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -14,19 +14,21 @@
       <div class="brand">
         <div class="logo">🦟</div>
         <h1>Mosquito Hunter</h1>
-        <p>Beta v0.4 — strictere detectie, handmatige target lock, donkere-kamer boost.</p>
+        <p>Beta v0.6 — Hunter Mode, Mug Academy, XP, ranks, avatar en vangst-screenshots.</p>
       </div>
       <button id="startBtn" class="primary">START HUNT</button>
-      <div class="note">Tip: tik op het scherm als je zelf een mug ziet. De app probeert daarna dat punt vast te houden.</div>
+      <button id="profileStartBtn" class="secondary">Hunter Profile</button>
+      <button id="academyStartBtn" class="secondary">Mug Academy</button>
+      <div class="note">Deze versie maakt er een game van: vang muggen, verdien XP, stijg in rang en deel je catch card.</div>
     </section>
 
     <section id="huntScreen" class="screen hidden">
       <div id="hud">
         <div class="pill" id="audioThreat">Audio: --</div>
-        <div class="pill red" id="motionThreat">Motion: --</div>
         <div class="pill green" id="wallThreat">Wall: --</div>
         <div class="pill blue" id="manualState">Manual: off</div>
-        <div class="pill" id="lockState">No lock</div>
+        <div class="pill gold" id="rankHud">Rookie</div>
+        <div class="pill gold" id="lockState">Scanning</div>
       </div>
 
       <div id="stage">
@@ -35,32 +37,73 @@
       </div>
 
       <div id="controls">
-        <button id="modeBtn">Mode: Dual</button>
-        <button id="sensitivityBtn">Sensitivity: Balanced</button>
+        <button id="hunterBtn">Hunter: ON</button>
+        <button id="manualBtn">Manual Target</button>
+        <button id="sensitivityBtn">Mode: Strict</button>
         <button id="zoomBtn">Zoom: 1x</button>
-        <button id="torchBtn">Zaklamp</button>
+        <button id="shotBtn">Catch Shot</button>
+        <button id="profileBtn">Profile</button>
+        <button id="academyBtn">Academy</button>
         <button id="stopBtn">Stop</button>
       </div>
 
       <div id="feedback">
-        <button id="confirmMosquito">Mug</button>
+        <button id="confirmMosquito">Mug +XP</button>
         <button id="rejectTarget">Geen mug</button>
       </div>
 
-      <div id="legend">
-        <div><span class="dot redDot"></span> Rood = beweging</div>
-        <div><span class="dot greenDot"></span> Groen = stilzittend kandidaat</div>
-        <div><span class="dot blueDot"></span> Blauw = handmatig geselecteerd</div>
+      <div id="debug">
+        <div>Hunter: <span id="hunterNameOut">Guest</span></div>
+        <div>Rank: <span id="rankOut">Rookie</span></div>
+        <div>XP: <span id="xpOut">0</span></div>
+        <div>Kills: <span id="killOut">0</span></div>
+        <div>Top score: <span id="confidenceOut">0%</span></div>
+        <div>Light: <span id="lightOut">--</span></div>
+        <div>Audio: <span id="freqOut">--</span></div>
       </div>
 
-      <div id="debug">
-        <div>Audio: <span id="freqOut">--</span></div>
-        <div>Light: <span id="lightOut">--</span></div>
-        <div>Motion: <span id="motionOut">--</span></div>
-        <div>Wall candidates: <span id="wallOut">--</span></div>
-        <div>Best score: <span id="confidenceOut">0%</span></div>
-        <div>Tracks: <span id="tracksOut">0</span></div>
-        <div>Samples: <span id="samplesOut">0</span></div>
+      <div id="tapHint" class="hidden">Tik nu op de mug/kandidaat</div>
+      <canvas id="shareCanvas" class="hidden" width="1080" height="1920"></canvas>
+    </section>
+
+    <section id="profileScreen" class="screen hidden profile">
+      <div class="panel">
+        <h2>🧬 Hunter Profile</h2>
+        <div id="avatar" class="avatar">🧢</div>
+        <label>Hunter name</label>
+        <input id="hunterNameInput" placeholder="Bijv. Jonathan the Slayer" maxlength="28" />
+        <button id="saveProfileBtn" class="primary">Save profile</button>
+
+        <div class="statGrid">
+          <div><b id="profileRank">Rookie</b><span>Rank</span></div>
+          <div><b id="profileLevel">1</b><span>Level</span></div>
+          <div><b id="profileKills">0</b><span>Kills</span></div>
+          <div><b id="profileXP">0</b><span>XP</span></div>
+        </div>
+
+        <div class="progressWrap">
+          <div id="xpBar"></div>
+        </div>
+        <p id="nextRankText">Next rank loading...</p>
+
+        <h3>Avatar gear</h3>
+        <div id="gearText" class="gear">Rookie cap unlocked.</div>
+
+        <button id="closeProfileBtn" class="secondary">Terug</button>
+      </div>
+    </section>
+
+    <section id="academyScreen" class="screen hidden academy">
+      <div class="academyTop">
+        <h2>🦟 Mug Academy</h2>
+        <button id="closeAcademyBtn">Sluiten</button>
+      </div>
+      <div class="cards">
+        <article class="card"><h3>Clean Kill Guide</h3><p><b>Geen bloed op de muur:</b> glas + papier, elektrische vliegenmepper, stofzuiger met smalle kop of vangen tegen raam.</p></article>
+        <article class="card"><h3>Schuilplaatsen</h3><ul><li>Achter gordijnen</li><li>Hoeken bij plafond</li><li>Achter hoofdbord/tv/kast</li><li>Planten en vochtige plekken</li></ul></article>
+        <article class="card"><h3>Mug vs vlieg</h3><p><b>Mug:</b> slank, lange poten, vaak muur/plafond. <b>Vlieg:</b> compacter, vaker bij ramen/eten/licht.</p></article>
+        <article class="card"><h3>Seizoenskalender NL</h3><div class="calendar"><div>Jan–Mrt: laag</div><div>Apr–Mei: stijgend</div><div>Jun–Sep: hoog</div><div>Okt: dalend</div><div>Nov–Dec: laag</div></div></article>
+        <article class="card"><h3>Hunter Protocol</h3><ol><li>Scan langzaam op 0,5–2m.</li><li>Gebruik Manual Target als jij hem ziet.</li><li>Bevestig met Mug +XP.</li><li>Maak Catch Shot om te delen.</li></ol></article>
       </div>
     </section>
   </main>

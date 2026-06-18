@@ -1,14 +1,12 @@
-# Mosquito Hunter Beta v0.4
+# Mosquito Hunter Beta v0.6
 
-Changes:
-- Manual tap-to-lock target
-- Longer target memory
-- Stricter false-positive suppression
-- Dark Boost sensitivity mode
-- Better wall candidate scoring
-- Confirm / reject buttons for local training samples
-- Higher mosquito candidate scores for plausible small dark targets
+Adds game loop:
+- Local hunter profile
+- XP, ranks, level progression
+- Avatar gear upgrades
+- Kill counter
+- Catch screenshot/share card
+- Academy retained
+- Hunter Mode retained
 
-Notes:
-- No real infrared/thermal detection is possible without external hardware.
-- Local samples are stored in browser localStorage only.
+Still local-only: no real login or cloud leaderboard yet.

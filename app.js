@@ -1,423 +1,81 @@
-const $ = (id) => document.getElementById(id);
+const $=(id)=>document.getElementById(id);
+let stream=null,track=null,audioCtx=null,analyser=null,prev=null,running=false;
+let sensitivity='strict',hunterMode=true,manualArmed=false,zoomLevel=1,nextTrackId=1;
+let audioScore=0,wallScore=0,lockScore=0,avgLum=0,tracks=[];
+let profile=loadProfile();
 
-let stream=null, track=null, torchOn=false, audioCtx=null, analyser=null;
-let prev=null, running=false, mode='dual', sensitivity='balanced';
-let audioScore=0, motionScore=0, wallScore=0, lockScore=0, avgLum=0;
-let tracks=[], samples=[];
-let zoomLevel=1, nextTrackId=1;
+$('startBtn').onclick=startHunt;$('academyStartBtn').onclick=openAcademy;$('academyBtn').onclick=openAcademy;$('closeAcademyBtn').onclick=closeAcademy;
+$('profileStartBtn').onclick=openProfile;$('profileBtn').onclick=openProfile;$('closeProfileBtn').onclick=closeProfile;$('saveProfileBtn').onclick=saveProfile;
+$('stopBtn').onclick=stopHunt;$('manualBtn').onclick=armManual;$('hunterBtn').onclick=toggleHunter;$('zoomBtn').onclick=cycleZoom;$('sensitivityBtn').onclick=cycleSensitivity;
+$('confirmMosquito').onclick=()=>labelBest(true);$('rejectTarget').onclick=()=>labelBest(false);$('shotBtn').onclick=makeCatchShot;$('overlay').addEventListener('pointerdown',manualTarget);
 
-$('startBtn').addEventListener('click', startHunt);
-$('stopBtn').addEventListener('click', stopHunt);
-$('torchBtn').addEventListener('click', toggleTorch);
-$('modeBtn').addEventListener('click', toggleMode);
-$('zoomBtn').addEventListener('click', cycleZoom);
-$('sensitivityBtn').addEventListener('click', cycleSensitivity);
-$('confirmMosquito').addEventListener('click', () => labelBest(true));
-$('rejectTarget').addEventListener('click', () => labelBest(false));
-$('overlay').addEventListener('pointerdown', manualTarget);
+function loadProfile(){return JSON.parse(localStorage.getItem('mh_profile_v06')||'{"name":"Guest Hunter","kills":0,"xp":0,"shots":0}')}
+function saveProfileData(){localStorage.setItem('mh_profile_v06',JSON.stringify(profile))}
+function rankForXP(xp){
+  if(xp>=5000)return ['Mosquito Overlord',6,'👑🦟'];
+  if(xp>=2500)return ['Night Stalker',5,'🥷🦟'];
+  if(xp>=1200)return ['Swarm Slayer',4,'🛡️🦟'];
+  if(xp>=500)return ['Hunter Elite',3,'🎯🦟'];
+  if(xp>=150)return ['Hunter',2,'🧢🦟'];
+  return ['Rookie',1,'🧢'];
+}
+function nextRankXP(xp){return xp<150?150:xp<500?500:xp<1200?1200:xp<2500?2500:xp<5000?5000:5000}
+function refreshProfileUI(){
+  const [rank,level,avatar]=rankForXP(profile.xp);
+  $('hunterNameOut').textContent=profile.name;$('rankOut').textContent=rank;$('rankHud').textContent=rank;$('xpOut').textContent=profile.xp;$('killOut').textContent=profile.kills;
+  $('profileRank').textContent=rank;$('profileLevel').textContent=level;$('profileKills').textContent=profile.kills;$('profileXP').textContent=profile.xp;$('avatar').textContent=avatar;
+  $('hunterNameInput').value=profile.name;
+  const next=nextRankXP(profile.xp), prev=level===1?0:level===2?150:level===3?500:level===4?1200:level===5?2500:5000;
+  const pct=next===prev?100:Math.round((profile.xp-prev)/(next-prev)*100);
+  $('xpBar').style.width=clamp(pct,0,100)+'%';
+  $('nextRankText').textContent=profile.xp>=5000?'Max rank reached. You are the nightmare.':`${next-profile.xp} XP tot volgende rank.`;
+  $('gearText').textContent=gearText(level);
+}
+function gearText(level){return ['Rookie cap unlocked.','Hunter cap + basic tracker.','Elite goggles unlocked.','Swarm shield unlocked.','Night cloak unlocked.','Golden Overlord crown unlocked.'][level-1]}
 
 async function startHunt(){
   try{
-    $('startScreen').classList.add('hidden');
-    $('huntScreen').classList.remove('hidden');
-
-    stream=await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080},frameRate:{ideal:30}},
-      audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}
-    });
-
-    const video=$('video');
-    video.srcObject=stream;
-    await video.play();
-    track=stream.getVideoTracks()[0];
-
-    setupAudio(stream);
-    running=true;
-    requestAnimationFrame(scanFrame);
-    setInterval(updateHud,250);
-  }catch(e){
-    alert('Starten lukt niet: '+e.message+'\\nGebruik de HTTPS GitHub Pages-link.');
-    $('huntScreen').classList.add('hidden');
-    $('startScreen').classList.remove('hidden');
-  }
+    $('startScreen').classList.add('hidden');$('academyScreen').classList.add('hidden');$('profileScreen').classList.add('hidden');$('huntScreen').classList.remove('hidden');
+    refreshProfileUI();
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080},frameRate:{ideal:30}},audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    const video=$('video');video.srcObject=stream;await video.play();track=stream.getVideoTracks()[0];
+    setupAudio(stream);running=true;requestAnimationFrame(scanFrame);setInterval(updateHud,250);
+  }catch(e){alert('Starten lukt niet: '+e.message);$('huntScreen').classList.add('hidden');$('startScreen').classList.remove('hidden')}
 }
-
-function setupAudio(s){
-  audioCtx=new (window.AudioContext||window.webkitAudioContext)();
-  const source=audioCtx.createMediaStreamSource(s);
-  analyser=audioCtx.createAnalyser();
-  analyser.fftSize=4096;
-  source.connect(analyser);
-}
-
-function scanAudio(){
-  if(!analyser||!audioCtx)return;
-  const data=new Uint8Array(analyser.frequencyBinCount);
-  analyser.getByteFrequencyData(data);
-
-  let peak=0,idx=0;
-  for(let i=0;i<data.length;i++){ if(data[i]>peak){peak=data[i];idx=i;} }
-  const freq=idx*audioCtx.sampleRate/analyser.fftSize;
-
-  // more selective mosquito-like wingbeat band; still broad enough for testing
-  let score=0;
-  if(freq>=380&&freq<=820)score+=46;
-  if(freq>=430&&freq<=680)score+=14;
-  if(peak>52)score+=Math.min(40,(peak-52)*1.05);
-
-  audioScore=Math.round(clamp(score,0,100));
-  $('freqOut').textContent=`${Math.round(freq)} Hz / ${peak}`;
-}
-
+function setupAudio(s){audioCtx=new (window.AudioContext||window.webkitAudioContext)();const source=audioCtx.createMediaStreamSource(s);analyser=audioCtx.createAnalyser();analyser.fftSize=4096;source.connect(analyser)}
+function scanAudio(){if(!analyser||!audioCtx)return;const data=new Uint8Array(analyser.frequencyBinCount);analyser.getByteFrequencyData(data);let peak=0,idx=0;for(let i=0;i<data.length;i++){if(data[i]>peak){peak=data[i];idx=i}}const freq=idx*audioCtx.sampleRate/analyser.fftSize;let score=0;if(freq>=380&&freq<=850)score+=44;if(freq>=430&&freq<=700)score+=16;if(peak>55)score+=Math.min(40,(peak-55)*1.05);audioScore=Math.round(clamp(score,0,100));$('freqOut').textContent=`${Math.round(freq)} Hz / ${peak}`}
 function scanFrame(){
-  if(!running)return;
-
-  const video=$('video'), overlay=$('overlay'), octx=overlay.getContext('2d');
-  overlay.width=video.clientWidth; overlay.height=video.clientHeight;
-  octx.clearRect(0,0,overlay.width,overlay.height);
-
-  const w=420;
-  const h=Math.max(236,Math.round(w*(video.videoHeight||1080)/(video.videoWidth||1920)));
-  const c=document.createElement('canvas'); c.width=w; c.height=h;
-  const ctx=c.getContext('2d',{willReadFrequently:true});
-
-  if(video.videoWidth>0){
-    const vw=video.videoWidth, vh=video.videoHeight;
-    const cropW=vw/zoomLevel, cropH=vh/zoomLevel;
-    const cropX=(vw-cropW)/2, cropY=(vh-cropH)/2;
-    ctx.drawImage(video,cropX,cropY,cropW,cropH,0,0,w,h);
-
-    const frame=ctx.getImageData(0,0,w,h);
-    avgLum = computeAvgLum(frame);
-    $('lightOut').textContent = Math.round(avgLum);
-
-    const detections=[];
-    if(mode==='dual'||mode==='motion') detections.push(...scanMotion(frame,w,h));
-    if(mode==='dual'||mode==='wall') detections.push(...scanWall(frame,w,h));
-
-    updateTracks(detections,w,h);
-    drawTracks(octx,overlay,w,h);
-
-    prev=frame;
-  }
-
-  scanAudio();
-  const best = tracks.length ? Math.max(...tracks.map(t=>t.score)) : 0;
-  const bestHits = tracks.length ? tracks[0].hits : 0;
-  const combined=Math.max(best,(best+audioScore)/2);
-
-  // longer, stricter lock: needs repeated evidence or manual target
-  if((combined>78 && bestHits>=3) || (tracks[0] && tracks[0].manual && tracks[0].score>62)){
-    lockScore=Math.min(100,lockScore+5);
-  } else {
-    lockScore=Math.max(0,lockScore-1.5);
-  }
-
-  requestAnimationFrame(scanFrame);
+  if(!running)return;const video=$('video'),overlay=$('overlay'),octx=overlay.getContext('2d');overlay.width=video.clientWidth;overlay.height=video.clientHeight;octx.clearRect(0,0,overlay.width,overlay.height);
+  const w=480,h=Math.max(270,Math.round(w*(video.videoHeight||1080)/(video.videoWidth||1920)));const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d',{willReadFrequently:true});
+  if(video.videoWidth>0){const vw=video.videoWidth,vh=video.videoHeight,cropW=vw/zoomLevel,cropH=vh/zoomLevel;ctx.drawImage(video,(vw-cropW)/2,(vh-cropH)/2,cropW,cropH,0,0,w,h);const frame=ctx.getImageData(0,0,w,h);avgLum=computeAvgLum(frame);$('lightOut').textContent=Math.round(avgLum);updateTracks(scanWall(frame,w,h),w,h);drawTracks(octx,overlay,w,h);prev=frame}
+  scanAudio();const top=tracks[0],best=top?top.score:0;if(top&&(top.manual||(best>=90&&top.hits>=3)))lockScore=Math.min(100,lockScore+4.5);else lockScore=Math.max(0,lockScore-1.2);requestAnimationFrame(scanFrame)
 }
-
-function computeAvgLum(frame){
-  const d=frame.data; let total=0, n=0;
-  for(let i=0;i<d.length;i+=80){
-    total += 0.2126*d[i]+0.7152*d[i+1]+0.0722*d[i+2]; n++;
-  }
-  return total/n;
-}
-
-function scanMotion(frame,w,h){
-  if(!prev){motionScore=0;return [];}
-  const step=4;
-  let total=0,sx=0,sy=0,minX=w,maxX=0,minY=h,maxY=0;
-  const threshold = avgLum < 70 ? 120 : 105;
-
-  for(let y=0;y<h;y+=step){
-    for(let x=0;x<w;x+=step){
-      const i=(y*w+x)*4;
-      const d=Math.abs(frame.data[i]-prev.data[i])+Math.abs(frame.data[i+1]-prev.data[i+1])+Math.abs(frame.data[i+2]-prev.data[i+2]);
-      if(d>threshold){
-        total++;sx+=x;sy+=y;
-        if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y;
-      }
-    }
-  }
-
-  $('motionOut').textContent=total;
-  const boxW=maxX-minX, boxH=maxY-minY, area=boxW*boxH;
-
-  // suppress hand and camera sweep: too large, too spread out, too much total motion
-  const maxTotal = sensitivity==='strict' ? 45 : sensitivity==='balanced' ? 75 : 115;
-  if(total>=3 && total<maxTotal && area<2400){
-    const cx=sx/total, cy=sy/total;
-    const compactness = area>0 ? clamp((total*16)/area,0,1) : 0;
-    const darkBoost = avgLum<65 ? 8 : 0;
-    const score=clamp(42 + total*0.9 + compactness*18 + darkBoost,0,100);
-    motionScore=Math.round(score);
-    return [{x:cx,y:cy,type:'motion',score:motionScore,size:total,boxArea:area}];
-  }
-
-  motionScore=Math.max(0,motionScore-8);
-  return [];
-}
-
+function computeAvgLum(frame){const d=frame.data;let total=0,n=0;for(let i=0;i<d.length;i+=96){total+=lumAt(d,i);n++}return total/n}
 function scanWall(frame,w,h){
-  const step = sensitivity==='high' ? 3 : 4;
-  const candidates=[];
-  const data=frame.data;
-
-  const isDark = avgLum < 75;
-  const contrastMin = sensitivity==='strict' ? 62 : sensitivity==='balanced' ? 55 : 48;
-  const bgMin = isDark ? 55 : 90;
-  const lumMax = isDark ? 95 : 112;
-  const textureMax = sensitivity==='strict' ? 26 : sensitivity==='balanced' ? 32 : 40;
-
-  for(let y=12;y<h-12;y+=step){
-    for(let x=12;x<w-12;x+=step){
-      const i=(y*w+x)*4;
-      const lum=lumAt(data,i);
-
-      let ring=0,n=0, ringVar=0;
-      const samples=[];
-      for(let dy=-10;dy<=10;dy+=10){
-        for(let dx=-10;dx<=10;dx+=10){
-          if(dx===0&&dy===0)continue;
-          const j=((y+dy)*w+(x+dx))*4;
-          const l=lumAt(data,j);
-          samples.push(l); ring+=l; n++;
-        }
-      }
-      const bg=ring/n;
-      for(const s of samples) ringVar+=Math.abs(s-bg);
-      ringVar/=samples.length;
-
-      const contrast=bg-lum;
-      if(contrast>contrastMin && bg>bgMin && lum<lumMax && ringVar<textureMax){
-        candidates.push({x,y,contrast,texture:ringVar,lum,bg});
-      }
-    }
-  }
-
-  const clusters=[];
-  for(const p of candidates){
-    let found=false;
-    for(const cl of clusters){
-      const dx=cl.x-p.x, dy=cl.y-p.y;
-      if(dx*dx+dy*dy<120){
-        cl.x=(cl.x*cl.n+p.x)/(cl.n+1);
-        cl.y=(cl.y*cl.n+p.y)/(cl.n+1);
-        cl.contrast=Math.max(cl.contrast,p.contrast);
-        cl.texture=(cl.texture*cl.n+p.texture)/(cl.n+1);
-        cl.n++;
-        found=true; break;
-      }
-    }
-    if(!found) clusters.push({x:p.x,y:p.y,contrast:p.contrast,texture:p.texture,n:1});
-  }
-
-  const filtered=clusters
-    .filter(c=>{
-      // reject texture/noise and objects too large for likely mosquito at typical scan distance
-      const maxN = sensitivity==='high' ? 12 : 8;
-      return c.n>=1 && c.n<=maxN && c.texture<textureMax;
-    })
-    .map(c=>{
-      const sizeScore = c.n>=2 && c.n<=6 ? 24 : 9;
-      const contrastScore = clamp((c.contrast-contrastMin)*1.8,0,34);
-      const texturePenalty = c.texture*0.45;
-      const darkBoost = isDark ? 10 : 0;
-      const audioBoost = audioScore>40 ? 7 : 0;
-      const score = clamp(50 + sizeScore + contrastScore + darkBoost + audioBoost - texturePenalty,0,99);
-      return {x:c.x,y:c.y,type:'wall',score:Math.round(score),size:c.n,texture:c.texture};
-    })
-    .filter(c=>c.score >= (sensitivity==='strict'?72:65))
-    .sort((a,b)=>b.score-a.score)
-    .slice(0,3);
-
-  $('wallOut').textContent=filtered.length;
-  wallScore=filtered.length ? filtered[0].score : Math.max(0,wallScore-5);
-  return filtered;
+  const step=sensitivity==='dark'?3:4,data=frame.data,candidates=[],isDark=avgLum<76;
+  const contrastMin=sensitivity==='strict'?66:sensitivity==='dark'?52:58,bgMin=isDark?50:92,lumMax=isDark?102:110,textureMax=sensitivity==='strict'?24:sensitivity==='dark'?36:30;
+  for(let y=14;y<h-14;y+=step){for(let x=14;x<w-14;x+=step){const i=(y*w+x)*4,lum=lumAt(data,i);let ring=0,n=0,variance=0,samples=[];for(let dy=-12;dy<=12;dy+=12){for(let dx=-12;dx<=12;dx+=12){if(dx===0&&dy===0)continue;const j=((y+dy)*w+(x+dx))*4,l=lumAt(data,j);samples.push(l);ring+=l;n++}}const bg=ring/n;for(const s of samples)variance+=Math.abs(s-bg);variance/=samples.length;const contrast=bg-lum;if(contrast>contrastMin&&bg>bgMin&&lum<lumMax&&variance<textureMax)candidates.push({x,y,contrast,texture:variance})}}
+  const clusters=[];for(const p of candidates){let found=false;for(const c of clusters){const dx=c.x-p.x,dy=c.y-p.y;if(dx*dx+dy*dy<130){c.x=(c.x*c.n+p.x)/(c.n+1);c.y=(c.y*c.n+p.y)/(c.n+1);c.contrast=Math.max(c.contrast,p.contrast);c.texture=(c.texture*c.n+p.texture)/(c.n+1);c.n++;found=true;break}}if(!found)clusters.push({x:p.x,y:p.y,contrast:p.contrast,texture:p.texture,n:1})}
+  const filtered=clusters.filter(c=>c.n>=1&&c.n<=7&&c.texture<textureMax).map(c=>{const sizeScore=c.n>=2&&c.n<=5?26:10,contrastScore=clamp((c.contrast-contrastMin)*2,0,36),texturePenalty=c.texture*.55,darkBoost=sensitivity==='dark'?14:0,audioBoost=audioScore>45?8:0,score=clamp(70+sizeScore+contrastScore+darkBoost+audioBoost-texturePenalty,0,99);return{x:c.x,y:c.y,type:'wall',score:Math.round(score),size:c.n}}).filter(c=>c.score>=88).sort((a,b)=>b.score-a.score).slice(0,2);
+  $('wallOut') && ($('wallOut').textContent=filtered.length);wallScore=filtered.length?filtered[0].score:Math.max(0,wallScore-5);return filtered
 }
-
-function lumAt(data,i){ return 0.2126*data[i]+0.7152*data[i+1]+0.0722*data[i+2]; }
-function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
-
-function updateTracks(detections,w,h){
-  for(const t of tracks){
-    t.age++; t.ttl--; t.score=Math.max(0,t.score-(t.manual?0.25:0.9)); t.matched=false;
-  }
-
-  for(const d of detections){
-    let best=null,bestDist=99999;
-    for(const t of tracks){
-      const dx=t.x-d.x, dy=t.y-d.y;
-      const dist=dx*dx+dy*dy;
-      const gate = t.manual ? 2500 : 1100;
-      if(dist<bestDist && dist<gate){ best=t; bestDist=dist; }
-    }
-
-    if(best){
-      const movement=Math.sqrt(bestDist);
-      best.x=best.x*0.72+d.x*0.28;
-      best.y=best.y*0.72+d.y*0.28;
-      best.type=best.manual ? 'manual' : d.type;
-      best.hits++;
-      best.ttl=best.manual ? 180 : d.type==='wall' ? 95 : 55;
-      best.score=clamp(best.score*0.62 + d.score*0.38 + Math.min(20,best.hits*1.7),0,100);
-      best.lastMove=movement;
-      best.matched=true;
-    }else{
-      tracks.push({
-        id:nextTrackId++,x:d.x,y:d.y,type:d.type,score:d.score,hits:1,age:0,
-        ttl:d.type==='wall'?85:45,lastMove:0,matched:true,manual:false
-      });
-    }
-  }
-
-  tracks=tracks.filter(t=>t.ttl>0 && t.score>14).sort((a,b)=>b.score-a.score).slice(0,8);
-  $('tracksOut').textContent=tracks.length;
-}
-
-function manualTarget(ev){
-  const overlay=$('overlay');
-  const rect=overlay.getBoundingClientRect();
-  const ox=ev.clientX-rect.left, oy=ev.clientY-rect.top;
-
-  // map screen tap to analysis space approximation
-  const w=420;
-  const h=Math.max(236,Math.round(w*(($('video').videoHeight||1080)/($('video').videoWidth||1920))));
-  const x=ox/overlay.width*w, y=oy/overlay.height*h;
-
-  tracks.unshift({
-    id:nextTrackId++, x, y, type:'manual', score:88, hits:6, age:0,
-    ttl:220, lastMove:0, matched:true, manual:true
-  });
-  tracks=tracks.slice(0,8);
-  lockScore=75;
-  $('manualState').textContent='Manual: target';
-  if(navigator.vibrate)navigator.vibrate([40,30,40]);
-}
-
-function drawTracks(ctx,overlay,w,h){
-  for(const t of tracks){
-    const x=t.x*overlay.width/w, y=t.y*overlay.height/h;
-    const conf=Math.round(t.score);
-    if(t.type==='motion') drawRedTarget(ctx,x,y,conf,t.hits);
-    else if(t.type==='manual') drawBlueTarget(ctx,x,y,conf,t.hits);
-    else drawGreenTarget(ctx,x,y,conf,t.hits);
-  }
-}
-
-function drawReticle(ctx,x,y,r,color,label){
-  ctx.strokeStyle=color; ctx.lineWidth=5;
-  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(x-r-12,y);ctx.lineTo(x-r+10,y);
-  ctx.moveTo(x+r-10,y);ctx.lineTo(x+r+12,y);
-  ctx.moveTo(x,y-r-12);ctx.lineTo(x,y-r+10);
-  ctx.moveTo(x,y+r-10);ctx.lineTo(x,y+r+12);
-  ctx.stroke();
-  ctx.fillStyle=color; ctx.font='bold 17px Arial';
-  ctx.fillText(label,x+r+9,y-6);
-}
-function drawRedTarget(ctx,x,y,conf,hits){ drawReticle(ctx,x,y,conf>76?60:42,'#ff1a1a',`${conf}% MOVING (${hits})`); }
-function drawGreenTarget(ctx,x,y,conf,hits){
-  const r=conf>78?43:31;
-  ctx.strokeStyle='#00ff78'; ctx.lineWidth=4;
-  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.stroke();
-  ctx.fillStyle='rgba(0,255,120,.16)';
-  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle='#00ff78';ctx.font='bold 16px Arial';
-  ctx.fillText(`${conf}% STILL (${hits})`,x+r+8,y-5);
-}
-function drawBlueTarget(ctx,x,y,conf,hits){ drawReticle(ctx,x,y,60,'#2b8cff',`${conf}% MANUAL LOCK`); }
-
-function updateHud(){
-  const best = tracks.length ? tracks[0].score : 0;
-  $('confidenceOut').textContent=`${Math.round(best)}%`;
-  $('audioThreat').textContent=`Audio: ${label(audioScore)}`;
-  $('motionThreat').textContent=`Motion: ${label(motionScore)}`;
-  $('wallThreat').textContent=`Wall: ${label(wallScore)}`;
-  $('samplesOut').textContent=samples.length;
-
-  if(lockScore>70 && tracks.length){
-    const top=tracks[0];
-    if(top.type==='manual') {
-      $('lockState').textContent='🔵 MANUAL TARGET LOCKED';
-      $('lockState').style.background='rgba(43,140,255,.92)';
-    } else if(top.type==='wall') {
-      $('lockState').textContent='🟢 STILL TARGET LOCKED';
-      $('lockState').style.background='rgba(0,160,80,.92)';
-    } else {
-      $('lockState').textContent='🔴 MOVING TARGET LOCKED';
-      $('lockState').style.background='rgba(229,9,20,.92)';
-    }
-  }else if(best>45){
-    $('lockState').textContent='Tracking...';
-    $('lockState').style.background='rgba(0,0,0,.75)';
-  }else{
-    $('lockState').textContent='No lock';
-    $('lockState').style.background='rgba(0,0,0,.75)';
-  }
-}
-
-function label(v){if(v>70)return'HIGH';if(v>35)return'MEDIUM';return'LOW';}
-
-function labelBest(isMosquito){
-  if(!tracks.length){ alert('Geen target om te labelen. Tik eerst op een target of scan opnieuw.'); return; }
-  const t=tracks[0];
-  samples.push({ts:Date.now(),label:isMosquito?'mosquito':'not_mosquito',type:t.type,score:Math.round(t.score),hits:t.hits,manual:t.manual});
-  localStorage.setItem('mh_samples_v04', JSON.stringify(samples.slice(-500)));
-  if(isMosquito){
-    t.score=100; t.hits+=5; t.ttl=Math.max(t.ttl,220); lockScore=100;
-    if(navigator.vibrate)navigator.vibrate([60,30,60]);
-  }else{
-    tracks.shift(); lockScore=Math.max(0,lockScore-25);
-  }
-}
-
-function toggleMode(){
-  if(mode==='dual')mode='motion';
-  else if(mode==='motion')mode='wall';
-  else mode='dual';
-  $('modeBtn').textContent='Mode: '+(mode==='dual'?'Dual':mode==='motion'?'Motion':'Wall');
-}
-
-function cycleSensitivity(){
-  if(sensitivity==='balanced')sensitivity='strict';
-  else if(sensitivity==='strict')sensitivity='high';
-  else sensitivity='balanced';
-  const label=sensitivity==='balanced'?'Balanced':sensitivity==='strict'?'Strict':'Dark Boost';
-  $('sensitivityBtn').textContent='Sensitivity: '+label;
-}
-
-async function cycleZoom(){
-  zoomLevel = zoomLevel===1 ? 2 : zoomLevel===2 ? 3 : 1;
-  $('zoomBtn').textContent=`Zoom: ${zoomLevel}x`;
-  if(track && track.getCapabilities){
-    const caps=track.getCapabilities();
-    if(caps.zoom){
-      const z=Math.min(caps.zoom.max, Math.max(caps.zoom.min, zoomLevel));
-      try{ await track.applyConstraints({advanced:[{zoom:z}]}); }catch(e){}
-    }
-  }
-}
-
-async function toggleTorch(){
-  if(!track)return alert('Camera is nog niet gestart.');
-  const caps=track.getCapabilities?track.getCapabilities():{};
-  if(!caps.torch){
-    alert('Deze browser/telefoon staat zaklampbediening niet toe. Zet desnoods handmatig je zaklamp aan.');
-    return;
-  }
-  torchOn=!torchOn;
-  await track.applyConstraints({advanced:[{torch:torchOn}]});
-  $('torchBtn').textContent=torchOn?'Zaklamp uit':'Zaklamp';
-}
-
-function stopHunt(){
-  running=false;
-  if(stream)stream.getTracks().forEach(t=>t.stop());
-  if(audioCtx)audioCtx.close();
-  stream=null;track=null;prev=null;tracks=[];
-  $('huntScreen').classList.add('hidden');
-  $('startScreen').classList.remove('hidden');
-}
+function updateTracks(detections,w,h){for(const t of tracks){t.age++;t.ttl--;t.score=Math.max(0,t.score-(t.manual?.12:.45));t.matched=false}for(const d of detections){let best=null,bestDist=99999;for(const t of tracks){const dx=t.x-d.x,dy=t.y-d.y,dist=dx*dx+dy*dy,gate=t.manual?3600:1250;if(dist<bestDist&&dist<gate){best=t;bestDist=dist}}if(best){best.x=best.x*.78+d.x*.22;best.y=best.y*.78+d.y*.22;if(!best.manual)best.type=d.type;best.hits++;best.ttl=best.manual?360:190;best.score=clamp(best.score*.68+d.score*.32+Math.min(18,best.hits*1.35),0,100)}else tracks.push({id:nextTrackId++,x:d.x,y:d.y,type:d.type,score:d.score,hits:1,age:0,ttl:170,manual:false})}tracks=tracks.filter(t=>t.ttl>0&&t.score>35).sort((a,b)=>b.score-a.score).slice(0,6)}
+function drawTracks(ctx,overlay,w,h){const top=tracks[0];for(const t of tracks){if(!t.manual&&t.score<(hunterMode?90:75))continue;if(hunterMode&&t!==top&&!t.manual)continue;const x=t.x*overlay.width/w,y=t.y*overlay.height/h,conf=Math.round(t.score);if(t.manual)drawTarget(ctx,x,y,62,'#2b8cff',`${conf}% MANUAL LOCK`);else drawStill(ctx,x,y,conf)}}
+function drawTarget(ctx,x,y,r,color,label){ctx.strokeStyle=color;ctx.lineWidth=5;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.stroke();ctx.fillStyle=color;ctx.font='bold 18px Arial';ctx.fillText(label,x+r+9,y-6)}
+function drawStill(ctx,x,y,conf){drawTarget(ctx,x,y,conf>94?50:38,'#00ff78',`${conf}% STILL TARGET`)}
+function updateHud(){const best=tracks.length?tracks[0].score:0;$('confidenceOut').textContent=Math.round(best)+'%';$('audioThreat').textContent='Audio: '+label(audioScore);$('wallThreat').textContent='Wall: '+label(wallScore);refreshProfileUI();if(lockScore>70&&tracks.length){const top=tracks[0];$('lockState').textContent=top.manual?'🔵 MANUAL LOCK':'🟢 TARGET LOCKED';$('lockState').style.background=top.manual?'rgba(43,140,255,.92)':'rgba(0,160,80,.92)'}else{$('lockState').textContent=best>=90?'High confidence':'Scanning';$('lockState').style.background='rgba(0,0,0,.75)'}}
+function armManual(){manualArmed=true;$('tapHint').classList.remove('hidden');$('manualState').textContent='Manual: armed';setTimeout(()=>{if(manualArmed){manualArmed=false;$('tapHint').classList.add('hidden');$('manualState').textContent='Manual: off'}},8000)}
+function manualTarget(ev){if(!manualArmed)return;ev.preventDefault();const overlay=$('overlay'),video=$('video'),rect=overlay.getBoundingClientRect(),w=480,h=Math.max(270,Math.round(w*((video.videoHeight||1080)/(video.videoWidth||1920))));tracks.unshift({id:nextTrackId++,x:(ev.clientX-rect.left)/overlay.width*w,y:(ev.clientY-rect.top)/overlay.height*h,type:'manual',score:95,hits:8,age:0,ttl:420,manual:true});tracks=tracks.slice(0,6);lockScore=100;manualArmed=false;$('tapHint').classList.add('hidden');$('manualState').textContent='Manual: locked';if(navigator.vibrate)navigator.vibrate([50,25,50])}
+function labelBest(isMosquito){if(!tracks.length){alert('Geen target. Gebruik Manual Target of scan opnieuw.');return}if(isMosquito){profile.kills++;profile.xp+=50+(tracks[0].manual?10:25);saveProfileData();tracks[0].score=100;tracks[0].ttl=420;lockScore=100;if(navigator.vibrate)navigator.vibrate([70,30,70])}else{tracks.shift();lockScore=Math.max(0,lockScore-30)}refreshProfileUI()}
+function makeCatchShot(){const canvas=$('shareCanvas'),ctx=canvas.getContext('2d'),video=$('video'),top=tracks[0],rank=rankForXP(profile.xp);ctx.fillStyle='#070707';ctx.fillRect(0,0,1080,1920);try{ctx.drawImage(video,0,0,1080,1450)}catch(e){}ctx.fillStyle='rgba(0,0,0,.72)';ctx.fillRect(0,1320,1080,600);ctx.fillStyle='#00ff78';ctx.font='bold 60px Arial';ctx.fillText('MOSQUITO HUNTER',60,1410);ctx.fillStyle='#fff';ctx.font='bold 48px Arial';ctx.fillText(profile.name,60,1485);ctx.fillStyle='#ffcf33';ctx.font='bold 44px Arial';ctx.fillText(rank[0]+'  '+rank[2],60,1555);ctx.fillStyle='#fff';ctx.font='38px Arial';ctx.fillText('Kills: '+profile.kills+'   XP: '+profile.xp,60,1630);ctx.fillText('Target confidence: '+(top?Math.round(top.score):0)+'%',60,1690);ctx.fillText(new Date().toLocaleString(),60,1750);ctx.strokeStyle='#00ff78';ctx.lineWidth=10;ctx.strokeRect(35,35,1010,1850);canvas.toBlob(blob=>{const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='mosquito-hunter-catch.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)})}
+function saveProfile(){profile.name=$('hunterNameInput').value.trim()||'Guest Hunter';saveProfileData();refreshProfileUI();alert('Profile saved.')}
+function openProfile(){refreshProfileUI();$('startScreen').classList.add('hidden');$('huntScreen').classList.add('hidden');$('academyScreen').classList.add('hidden');$('profileScreen').classList.remove('hidden')}
+function closeProfile(){$('profileScreen').classList.add('hidden');running?$('huntScreen').classList.remove('hidden'):$('startScreen').classList.remove('hidden')}
+function openAcademy(){$('startScreen').classList.add('hidden');$('huntScreen').classList.add('hidden');$('profileScreen').classList.add('hidden');$('academyScreen').classList.remove('hidden')}
+function closeAcademy(){$('academyScreen').classList.add('hidden');running?$('huntScreen').classList.remove('hidden'):$('startScreen').classList.remove('hidden')}
+function toggleHunter(){hunterMode=!hunterMode;$('hunterBtn').textContent='Hunter: '+(hunterMode?'ON':'OFF')}
+function cycleSensitivity(){sensitivity=sensitivity==='strict'?'dark':sensitivity==='dark'?'balanced':'strict';$('sensitivityBtn').textContent='Mode: '+(sensitivity==='dark'?'Dark':sensitivity==='strict'?'Strict':'Balanced')}
+async function cycleZoom(){zoomLevel=zoomLevel===1?2:zoomLevel===2?3:1;$('zoomBtn').textContent=`Zoom: ${zoomLevel}x`;if(track&&track.getCapabilities){const caps=track.getCapabilities();if(caps.zoom){try{await track.applyConstraints({advanced:[{zoom:Math.min(caps.zoom.max,Math.max(caps.zoom.min,zoomLevel))}]})}catch(e){}}}}
+function stopHunt(){running=false;if(stream)stream.getTracks().forEach(t=>t.stop());if(audioCtx)audioCtx.close();stream=null;track=null;prev=null;tracks=[];$('huntScreen').classList.add('hidden');$('startScreen').classList.remove('hidden')}
+function lumAt(d,i){return .2126*d[i]+.7152*d[i+1]+.0722*d[i+2]}function clamp(v,min,max){return Math.max(min,Math.min(max,v))}function label(v){return v>70?'HIGH':v>35?'MEDIUM':'LOW'}
+refreshProfileUI();
