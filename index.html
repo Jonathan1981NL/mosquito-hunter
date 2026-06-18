@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#050505" />
-  <title>Mosquito Hunter Beta v0.6</title>
+  <title>Mosquito Hunter Beta v0.7</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -14,19 +14,19 @@
       <div class="brand">
         <div class="logo">🦟</div>
         <h1>Mosquito Hunter</h1>
-        <p>Beta v0.6 — Hunter Mode, Mug Academy, XP, ranks, avatar en vangst-screenshots.</p>
+        <p>Beta v0.7 — clean hunter interface, restored detection, profile, XP and catch cards.</p>
       </div>
       <button id="startBtn" class="primary">START HUNT</button>
-      <button id="profileStartBtn" class="secondary">Hunter Profile</button>
       <button id="academyStartBtn" class="secondary">Mug Academy</button>
-      <div class="note">Deze versie maakt er een game van: vang muggen, verdien XP, stijg in rang en deel je catch card.</div>
+      <button id="profileStartBtn" class="secondary">Hunter Profile</button>
+      <div class="note">v0.7 toont alleen sterke targets in Hunter Mode. Gebruik Manual als jij hem eerder ziet dan de app.</div>
     </section>
 
     <section id="huntScreen" class="screen hidden">
       <div id="hud">
         <div class="pill" id="audioThreat">Audio: --</div>
+        <div class="pill red" id="motionThreat">Motion: --</div>
         <div class="pill green" id="wallThreat">Wall: --</div>
-        <div class="pill blue" id="manualState">Manual: off</div>
         <div class="pill gold" id="rankHud">Rookie</div>
         <div class="pill gold" id="lockState">Scanning</div>
       </div>
@@ -36,34 +36,44 @@
         <canvas id="overlay"></canvas>
       </div>
 
-      <div id="controls">
-        <button id="hunterBtn">Hunter: ON</button>
-        <button id="manualBtn">Manual Target</button>
-        <button id="sensitivityBtn">Mode: Strict</button>
-        <button id="zoomBtn">Zoom: 1x</button>
-        <button id="shotBtn">Catch Shot</button>
-        <button id="profileBtn">Profile</button>
-        <button id="academyBtn">Academy</button>
-        <button id="stopBtn">Stop</button>
-      </div>
-
-      <div id="feedback">
-        <button id="confirmMosquito">Mug +XP</button>
-        <button id="rejectTarget">Geen mug</button>
+      <div id="bottomBar">
+        <button id="menuBtn">☰ Menu</button>
+        <button id="manualBtn">🎯 Manual</button>
+        <button id="confirmMosquito">🦟 Mug +XP</button>
+        <button id="rejectTarget">Niet</button>
       </div>
 
       <div id="debug">
-        <div>Hunter: <span id="hunterNameOut">Guest</span></div>
+        <div><b id="hunterNameOut">Guest Hunter</b></div>
         <div>Rank: <span id="rankOut">Rookie</span></div>
-        <div>XP: <span id="xpOut">0</span></div>
-        <div>Kills: <span id="killOut">0</span></div>
-        <div>Top score: <span id="confidenceOut">0%</span></div>
+        <div>Kills: <span id="killOut">0</span> | XP: <span id="xpOut">0</span></div>
+        <div>Top: <span id="confidenceOut">0%</span></div>
         <div>Light: <span id="lightOut">--</span></div>
         <div>Audio: <span id="freqOut">--</span></div>
+        <div>Tracks: <span id="tracksOut">0</span></div>
       </div>
 
       <div id="tapHint" class="hidden">Tik nu op de mug/kandidaat</div>
       <canvas id="shareCanvas" class="hidden" width="1080" height="1920"></canvas>
+    </section>
+
+    <section id="menuSheet" class="sheet hidden">
+      <div class="sheetPanel">
+        <div class="sheetTop">
+          <h2>Hunter Menu</h2>
+          <button id="closeMenuBtn">Sluiten</button>
+        </div>
+        <div class="menuGrid">
+          <button id="toggleHunterBtn">Hunter Mode: ON</button>
+          <button id="cycleModeBtn">Detection: Strict</button>
+          <button id="zoomBtn">Zoom: 1x</button>
+          <button id="catchShotBtn">Catch Screenshot</button>
+          <button id="openProfileBtn">Hunter Profile</button>
+          <button id="openAcademyBtn">Mug Academy</button>
+          <button id="stopBtn">Stop Hunt</button>
+        </div>
+        <p class="small">Hunter Mode toont alleen de beste target boven 90% om hallucinaties te beperken.</p>
+      </div>
     </section>
 
     <section id="profileScreen" class="screen hidden profile">
@@ -81,14 +91,9 @@
           <div><b id="profileXP">0</b><span>XP</span></div>
         </div>
 
-        <div class="progressWrap">
-          <div id="xpBar"></div>
-        </div>
+        <div class="progressWrap"><div id="xpBar"></div></div>
         <p id="nextRankText">Next rank loading...</p>
-
-        <h3>Avatar gear</h3>
         <div id="gearText" class="gear">Rookie cap unlocked.</div>
-
         <button id="closeProfileBtn" class="secondary">Terug</button>
       </div>
     </section>

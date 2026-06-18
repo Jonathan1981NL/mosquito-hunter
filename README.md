@@ -1,12 +1,8 @@
-# Mosquito Hunter Beta v0.6
+# Mosquito Hunter Beta v0.7
 
-Adds game loop:
-- Local hunter profile
-- XP, ranks, level progression
-- Avatar gear upgrades
-- Kill counter
-- Catch screenshot/share card
-- Academy retained
-- Hunter Mode retained
-
-Still local-only: no real login or cloud leaderboard yet.
+Fixes:
+- Restores actual detection: motion + wall + manual
+- Simplifies hunter interface
+- Moves extra features into Menu overlay
+- Keeps XP/ranks/profile/catch screenshot
+- Hunter Mode defaults to 90%+ top target only
