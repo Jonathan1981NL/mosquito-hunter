@@ -1,11 +1,11 @@
-# Mosquito Hunter Beta v0.2
+# Mosquito Hunter Beta v0.3
 
-Dual Scan proof-of-concept.
+Changes:
+- Target memory/tracking
+- Less sensitive wall detection
+- Smarter pseudo-AI scoring
+- Lock requires repeated evidence
+- Zoom button: 1x / 2x / 3x
+- Digital crop zoom fallback if browser camera zoom is unsupported
 
-Red markers:
-- Moving targets / flying insects / motion.
-
-Green markers:
-- Still dark candidates on wall/ceiling.
-
-This is still experimental and may detect spots, shadows, dust, texture, screws, marks or other non-mosquito objects.
+Still experimental. False positives are expected.

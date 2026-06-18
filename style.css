@@ -17,8 +17,8 @@ p{color:#ccc;font-size:17px;line-height:1.4}
 #stage{position:relative;width:100vw;height:100vh;background:#000;overflow:hidden}
 video,canvas{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover}
 #controls{position:fixed;z-index:10;bottom:12px;left:0;right:0;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
-#controls button{background:rgba(255,255,255,.92);color:#111;padding:11px 14px;font-size:15px}
-#legend{position:fixed;z-index:10;left:10px;bottom:132px;background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:8px 10px;text-align:left;font-size:12px;color:#ddd}
+#controls button{background:rgba(255,255,255,.92);color:#111;padding:11px 13px;font-size:14px}
+#legend{position:fixed;z-index:10;left:10px;bottom:142px;background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:8px 10px;text-align:left;font-size:12px;color:#ddd}
 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
-.redDot{background:#ff1a1a}.greenDot{background:#00ff78}
+.redDot{background:#ff1a1a}.greenDot{background:#00ff78}.blueDot{background:#2b8cff}
 #debug{position:fixed;z-index:10;left:10px;bottom:68px;background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:8px 10px;text-align:left;font-size:12px;color:#ddd}

@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#050505" />
-  <title>Mosquito Hunter Beta v0.2</title>
+  <title>Mosquito Hunter Beta v0.3</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -14,10 +14,10 @@
       <div class="brand">
         <div class="logo">🦟</div>
         <h1>Mosquito Hunter</h1>
-        <p>Beta v0.2 — Dual Scan: rood voor beweging, groen voor stilzittende kandidaten.</p>
+        <p>Beta v0.3 — target memory, smarter scoring en zoom.</p>
       </div>
       <button id="startBtn" class="primary">START HUNT</button>
-      <div class="note">Open via de HTTPS GitHub Pages-link. Niet als lokaal bestand.</div>
+      <div class="note">Open via HTTPS. Niet als lokaal bestand.</div>
     </section>
 
     <section id="huntScreen" class="screen hidden">
@@ -35,20 +35,23 @@
 
       <div id="controls">
         <button id="modeBtn">Mode: Dual</button>
+        <button id="zoomBtn">Zoom: 1x</button>
         <button id="torchBtn">Zaklamp</button>
         <button id="stopBtn">Stop</button>
       </div>
 
       <div id="legend">
-        <div><span class="dot redDot"></span> Rood = bewegend target</div>
+        <div><span class="dot redDot"></span> Rood = vliegend/bewegend target</div>
         <div><span class="dot greenDot"></span> Groen = stilzittende kandidaat</div>
+        <div><span class="dot blueDot"></span> Blauw = tracked memory</div>
       </div>
 
       <div id="debug">
         <div>Audio peak: <span id="freqOut">--</span></div>
-        <div>Motion score: <span id="motionOut">--</span></div>
+        <div>Motion: <span id="motionOut">--</span></div>
         <div>Wall candidates: <span id="wallOut">--</span></div>
-        <div>Confidence: <span id="confidenceOut">0%</span></div>
+        <div>Best score: <span id="confidenceOut">0%</span></div>
+        <div>Tracks: <span id="tracksOut">0</span></div>
       </div>
     </section>
   </main>
