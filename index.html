@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#050505" />
+  <title>Mosquito Hunter Beta</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main id="app">
+    <section id="startScreen" class="screen">
+      <div class="brand">
+        <div class="logo">🦟</div>
+        <h1>Mosquito Hunter</h1>
+        <p>Beta v0.1 — camera, audio, motion tracking en target lock.</p>
+      </div>
+      <button id="startBtn" class="primary">START HUNT</button>
+      <div class="note">
+        Werkt alleen via een echte HTTPS-link, niet als lokaal bestand.
+        Geef camera- en microfoontoegang wanneer Chrome daarom vraagt.
+      </div>
+    </section>
+
+    <section id="huntScreen" class="screen hidden">
+      <div id="hud">
+        <div class="pill" id="audioThreat">Audio: --</div>
+        <div class="pill" id="visualThreat">Visual: --</div>
+        <div class="pill" id="lockState">No lock</div>
+      </div>
+
+      <div id="stage">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="overlay"></canvas>
+      </div>
+
+      <div id="controls">
+        <button id="torchBtn">Zaklamp</button>
+        <button id="stopBtn">Stop</button>
+      </div>
+
+      <div id="debug">
+        <div>Audio peak: <span id="freqOut">--</span></div>
+        <div>Motion: <span id="motionOut">--</span></div>
+        <div>Confidence: <span id="confidenceOut">0%</span></div>
+      </div>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

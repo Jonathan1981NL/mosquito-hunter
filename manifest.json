@@ -1,0 +1,9 @@
+{
+  "name": "Mosquito Hunter Beta",
+  "short_name": "Mosquito",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#050505",
+  "icons": []
+}
