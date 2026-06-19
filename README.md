@@ -1,11 +1,11 @@
-# Mosquito Hunter Beta v0.8
+# Mosquito Hunter Beta v0.9
 
-Fixes:
-- Motion detection restored
-- Manual prompt is now discreet
-- Manual and confirmed targets create local training samples
-- Export training data as JSON
-- Contrast boost added
-- Scan assist added
-
-Training samples are local only. Cloud database/model training is the next architecture step.
+Detector reset:
+- Motion detector rebuilt and easier to trigger
+- Wall detector rebuilt and less aggressively hidden
+- Manual detector discreet and sample-generating
+- Hunter Mode defaults OFF for testing
+- Show all targets defaults ON for testing
+- Detector Test Panel in menu
+- Local training samples + export retained
+- Catch screenshot and profile retained

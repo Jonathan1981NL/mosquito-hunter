@@ -1,114 +1,118 @@
 <!doctype html>
 <html lang="nl">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#050505" />
-  <title>Mosquito Hunter Beta v0.8</title>
-  <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <meta name="theme-color" content="#050505"/>
+  <title>Mosquito Hunter Beta v0.9</title>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
-  <main id="app">
-    <section id="startScreen" class="screen">
-      <div class="brand">
-        <div class="logo">🦟</div>
-        <h1>Mosquito Hunter</h1>
-        <p>Beta v0.8 — motion restored, discreet manual, learning captures en cleaner hunter UI.</p>
-      </div>
-      <button id="startBtn" class="primary">START HUNT</button>
-      <button id="academyStartBtn" class="secondary">Mug Academy</button>
-      <button id="profileStartBtn" class="secondary">Hunter Profile</button>
-      <div class="note">Manual targets worden lokaal opgeslagen als trainingssamples. Cloud database komt later.</div>
-    </section>
+<main>
+<section id="startScreen" class="screen">
+  <div class="logo">🦟</div>
+  <h1>Mosquito Hunter</h1>
+  <p>Beta v0.9 — detector reset: motion, wall, manual, training samples en AI-lite scoring.</p>
+  <button id="startBtn" class="primary">START HUNT</button>
+  <button id="profileStartBtn" class="secondary">Hunter Profile</button>
+  <button id="academyStartBtn" class="secondary">Mug Academy</button>
+  <p class="note">Start met Hunter Mode OFF. Als motion/wall/manual werken, zet Hunter Mode ON voor minder ruis.</p>
+</section>
 
-    <section id="huntScreen" class="screen hidden">
-      <div id="hud">
-        <div class="pill" id="scanAssist">Scan ready</div>
-        <div class="pill red" id="motionThreat">Motion: --</div>
-        <div class="pill green" id="wallThreat">Wall: --</div>
-        <div class="pill blue" id="manualState">Manual: off</div>
-        <div class="pill gold" id="lockState">Scanning</div>
-      </div>
+<section id="huntScreen" class="screen hidden">
+  <div id="hud">
+    <div class="pill" id="scanAssist">Starting...</div>
+    <div class="pill red" id="motionThreat">Motion: --</div>
+    <div class="pill green" id="wallThreat">Wall: --</div>
+    <div class="pill blue" id="manualState">Manual: off</div>
+    <div class="pill gold" id="lockState">Scanning</div>
+  </div>
 
-      <div id="stage">
-        <video id="video" autoplay playsinline muted></video>
-        <canvas id="overlay"></canvas>
-      </div>
+  <div id="stage">
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="overlay"></canvas>
+  </div>
 
-      <div id="bottomBar">
-        <button id="menuBtn">☰ Menu</button>
-        <button id="manualBtn">🎯 Manual</button>
-        <button id="confirmMosquito">🦟 Mug +XP</button>
-        <button id="rejectTarget">Niet</button>
-      </div>
+  <div id="bottomBar">
+    <button id="menuBtn">☰ Menu</button>
+    <button id="manualBtn">🎯 Manual</button>
+    <button id="confirmMosquito">🦟 Mug +XP</button>
+    <button id="rejectTarget">Niet</button>
+  </div>
 
-      <div id="debug">
-        <div><b id="hunterNameOut">Guest Hunter</b></div>
-        <div>Rank: <span id="rankOut">Rookie</span></div>
-        <div>Kills: <span id="killOut">0</span> | XP: <span id="xpOut">0</span></div>
-        <div>Top: <span id="confidenceOut">0%</span></div>
-        <div>Light: <span id="lightOut">--</span></div>
-        <div>Motion px: <span id="motionPxOut">0</span></div>
-        <div>Samples: <span id="samplesOut">0</span></div>
-      </div>
+  <div id="debug">
+    <div><b id="hunterNameOut">Guest Hunter</b></div>
+    <div>Kills: <span id="killOut">0</span> | XP: <span id="xpOut">0</span></div>
+    <div>Top: <span id="confidenceOut">0%</span></div>
+    <div>Light: <span id="lightOut">--</span></div>
+    <div>Motion px: <span id="motionPxOut">0</span></div>
+    <div>Wall dots: <span id="wallDotsOut">0</span></div>
+    <div>Tracks: <span id="tracksOut">0</span></div>
+    <div>Samples: <span id="samplesOut">0</span></div>
+  </div>
 
-      <div id="manualToast" class="hidden">Manual armed — tap target</div>
-      <canvas id="workCanvas" class="hidden"></canvas>
-      <canvas id="shareCanvas" class="hidden" width="1080" height="1920"></canvas>
-    </section>
+  <div id="manualToast" class="hidden">Manual armed — tap target</div>
+  <canvas id="workCanvas" class="hidden"></canvas>
+  <canvas id="shareCanvas" class="hidden" width="1080" height="1920"></canvas>
+</section>
 
-    <section id="menuSheet" class="sheet hidden">
-      <div class="sheetPanel">
-        <div class="sheetTop">
-          <h2>Hunter Menu</h2>
-          <button id="closeMenuBtn">Sluiten</button>
-        </div>
-        <div class="menuGrid">
-          <button id="toggleHunterBtn">Hunter Mode: ON</button>
-          <button id="cycleModeBtn">Detection: Strict</button>
-          <button id="zoomBtn">Zoom: 1x</button>
-          <button id="contrastBtn">Contrast: ON</button>
-          <button id="catchShotBtn">Catch Screenshot</button>
-          <button id="exportDataBtn">Export Samples</button>
-          <button id="openProfileBtn">Hunter Profile</button>
-          <button id="openAcademyBtn">Mug Academy</button>
-          <button id="stopBtn">Stop Hunt</button>
-        </div>
-        <p class="small">Training samples worden lokaal in je browser bewaard. Later kunnen we dit naar Firebase/Supabase sturen.</p>
-      </div>
-    </section>
+<section id="menuSheet" class="sheet hidden">
+  <div class="sheetPanel">
+    <div class="sheetTop"><h2>Hunter Menu</h2><button id="closeMenuBtn">Sluiten</button></div>
+    <div class="menuGrid">
+      <button id="toggleHunterBtn">Hunter Mode: OFF</button>
+      <button id="cycleModeBtn">Detection: Balanced</button>
+      <button id="zoomBtn">Zoom: 1x</button>
+      <button id="contrastBtn">Contrast: ON</button>
+      <button id="showAllBtn">Show: All targets</button>
+      <button id="catchShotBtn">Catch Screenshot</button>
+      <button id="exportDataBtn">Export Samples</button>
+      <button id="openProfileBtn">Hunter Profile</button>
+      <button id="openAcademyBtn">Mug Academy</button>
+      <button id="stopBtn">Stop Hunt</button>
+    </div>
+    <div class="testPanel">
+      <h3>Detector Test Panel</h3>
+      <div>Camera: <span id="testCamera">--</span></div>
+      <div>Motion detector: <span id="testMotion">--</span></div>
+      <div>Wall detector: <span id="testWall">--</span></div>
+      <div>Manual detector: <span id="testManual">ready</span></div>
+      <div>Training samples: <span id="testSamples">0</span></div>
+    </div>
+  </div>
+</section>
 
-    <section id="profileScreen" class="screen hidden profile">
-      <div class="panel">
-        <h2>🧬 Hunter Profile</h2>
-        <div id="avatar" class="avatar">🧢</div>
-        <label>Hunter name</label>
-        <input id="hunterNameInput" placeholder="Bijv. Jonathan the Slayer" maxlength="28" />
-        <button id="saveProfileBtn" class="primary">Save profile</button>
-        <div class="statGrid">
-          <div><b id="profileRank">Rookie</b><span>Rank</span></div>
-          <div><b id="profileLevel">1</b><span>Level</span></div>
-          <div><b id="profileKills">0</b><span>Kills</span></div>
-          <div><b id="profileXP">0</b><span>XP</span></div>
-        </div>
-        <div class="progressWrap"><div id="xpBar"></div></div>
-        <p id="nextRankText">Next rank loading...</p>
-        <div id="gearText" class="gear">Rookie cap unlocked.</div>
-        <button id="closeProfileBtn" class="secondary">Terug</button>
-      </div>
-    </section>
+<section id="profileScreen" class="screen hidden profile">
+  <div class="panel">
+    <h2>🧬 Hunter Profile</h2>
+    <div id="avatar" class="avatar">🧢</div>
+    <label>Hunter name</label>
+    <input id="hunterNameInput" placeholder="Bijv. Jonathan the Slayer" maxlength="28"/>
+    <button id="saveProfileBtn" class="primary">Save profile</button>
+    <div class="statGrid">
+      <div><b id="profileRank">Rookie</b><span>Rank</span></div>
+      <div><b id="profileLevel">1</b><span>Level</span></div>
+      <div><b id="profileKills">0</b><span>Kills</span></div>
+      <div><b id="profileXP">0</b><span>XP</span></div>
+    </div>
+    <div class="progressWrap"><div id="xpBar"></div></div>
+    <p id="nextRankText"></p>
+    <div id="gearText" class="gear">Rookie cap unlocked.</div>
+    <button id="closeProfileBtn" class="secondary">Terug</button>
+  </div>
+</section>
 
-    <section id="academyScreen" class="screen hidden academy">
-      <div class="academyTop"><h2>🦟 Mug Academy</h2><button id="closeAcademyBtn">Sluiten</button></div>
-      <div class="cards">
-        <article class="card"><h3>Clean Kill Guide</h3><p><b>Geen bloed op de muur:</b> glas + papier, elektrische vliegenmepper, stofzuiger met smalle kop of vangen tegen raam.</p></article>
-        <article class="card"><h3>Schuilplaatsen</h3><ul><li>Achter gordijnen</li><li>Hoeken bij plafond</li><li>Achter hoofdbord/tv/kast</li><li>Planten en vochtige plekken</li></ul></article>
-        <article class="card"><h3>Mug vs vlieg</h3><p><b>Mug:</b> slank, lange poten, vaak muur/plafond. <b>Vlieg:</b> compacter, vaker bij ramen/eten/licht.</p></article>
-        <article class="card"><h3>Camera tips</h3><ol><li>Gebruik 2x zoom op 0,5–1,5m.</li><li>Beweeg langzaam.</li><li>Scan lichte muren en plafondranden.</li><li>Gebruik Manual als jij hem ziet.</li></ol></article>
-      </div>
-    </section>
-  </main>
-  <script src="app.js"></script>
+<section id="academyScreen" class="screen hidden academy">
+  <div class="academyTop"><h2>🦟 Mug Academy</h2><button id="closeAcademyBtn">Sluiten</button></div>
+  <div class="cards">
+    <article class="card"><h3>Clean Kill Guide</h3><p><b>Geen bloed op de muur:</b> glas + papier, elektrische vliegenmepper, stofzuiger met smalle kop of vangen tegen raam.</p></article>
+    <article class="card"><h3>Schuilplaatsen</h3><ul><li>Achter gordijnen</li><li>Hoeken bij plafond</li><li>Achter hoofdbord/tv/kast</li><li>Planten en vochtige plekken</li></ul></article>
+    <article class="card"><h3>Camera tips</h3><ol><li>Begin met Hunter Mode OFF.</li><li>Gebruik 2x zoom op 0,5–1,5m.</li><li>Beweeg langzaam.</li><li>Gebruik Manual als jij hem ziet.</li></ol></article>
+    <article class="card"><h3>Volgende stap</h3><p>Voor echte AI hebben we veel bevestigde mug/niet-mug samples nodig. Deze app verzamelt ze lokaal.</p></article>
+  </div>
+</section>
+</main>
+<script src="app.js"></script>
 </body>
 </html>
